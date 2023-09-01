@@ -4,6 +4,8 @@
 # Change the following parameters as appropriate
 #   axn_file - name of the field shapefile
 #   axn_dir - path to the auction
+#   extra_cols - any additional columns to require in the shapefile and pass along to final stat files
+#   bids_to_remove - optional character strings of bids to exclude from processing (TODO: consider adding as column?)
 #   cores_max_global - maximum number of cores to use
 #   overwrite_global - whether or not to overwrite existing files
 #   temp_dir - path to use for writing temporary files, defaults to tempdir()
@@ -14,7 +16,7 @@
 # Auction ----------------------------------------------------------------------
 # Name of auction and auction shapefile
 # Used as a folder name, so letters, numbers, underscores, and dashes only
-auction_id <- "YYYY-MM-TEST" #example format: year-mth-code
+auction_id <- "2023-09-DeltaTest" #example format: year-mth-code
 
 # Path to auction files
 # By default, place in same directory as this repo (one level up from getwd())
@@ -23,7 +25,7 @@ axn_dir <- file.path(base_dir, auction_id)
 
 # Name and path of the field shapefile specifying the bids to analyze
 # Defaults to being stored in axn_dir; change as needed
-shp_fn <- "BirdReturnsDSODWetlands_Fall2023Ponds.shp" #include extension
+shp_fn <- "Birdreturns_Delta_Farmlands_Fall_2023.shp" #include extension
 axn_file <- file.path(axn_dir, shp_fn)
 
 # Required columns in the shapefile
@@ -31,6 +33,11 @@ axn_file <- file.path(axn_dir, shp_fn)
 base_cols <- c("BidID", "FieldID", "StartDate", "EndDate", "Split", "AreaAcres", "PricePerAc", "CoverType")
 extra_cols <- c()
 required_cols <- c(base_cols, extra_cols)
+
+# Bids to remove
+# Unique identifiers for bids to remove from consideration
+# Leave blank to include all (default)
+bids_to_remove <- paste0("23-FDF-", c(402, 405)) #e.g., paste0("23-FDF-", c(402, 405)) 
 
 # Spatial extent of the fields to process
 # Specifies the landsat scene the fields are part of, or 'valley' if multiple scenes

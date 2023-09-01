@@ -66,7 +66,6 @@ if (!file.exists(axn_file)) {
                      axn_file)))
 }
 
-
 # Check processing_extent
 allowed_scenes <- c("p44r33", "p44r34", "p43r34", "p42r35", "valley")
 if (!length(axn_extent) == 1) stop("axn_extent must be a single entry")
@@ -238,6 +237,31 @@ if (!file.exists(axn_file_clean) | overwrite_global == TRUE) {
                        paste0(missing_cols, collapse = "\n\t"))))
   }
   
+  # Drop bids specified as bids_to_remove in definitions.R
+  if (length(bids_to_remove) > 1) {
+    message_ts("WARNING - Attempting to remove the following bids (specified as bids_to_remove in definitions.R):\n\t",
+               paste0(bids_to_remove, collapse = "\n\t"))
+    
+    # Loop across bids to remove
+    for (b in bids_to_remove) {
+      
+      matches <- grepl(b, axn_shp$BidID)
+      if (sum(matches) == 0) {
+        
+        stop(add_ts("Found no matches for bid ", b, ". Please check specification of bids_to_remove in definitions.R"))
+      
+      } else {
+        
+        message_ts("Found and removing ", sum(matches), " bid fields for bid ", b, ":")
+        print(as.data.frame(axn_shp[matches,]))
+        axn_shp <- axn_shp[!matches,]
+        
+      }
+      
+    }
+    
+  }
+  
   # Check date format
   # as.Date will throw an error if dates are in an unrecognized format
   #   use lapply so that each element is checked individually, otherwise there will
@@ -249,7 +273,7 @@ if (!file.exists(axn_file_clean) | overwrite_global == TRUE) {
       
     }, error = function(e) {
       
-      stop(add_ts("ERROR - Unable to parse date values. Please ensure they are in a standard, ",
+      stop(add_ts("Unable to parse date values. Please ensure they are in a standard, ",
                   "unambiguous format.\n\t", e))
       
     })
@@ -261,8 +285,12 @@ if (!file.exists(axn_file_clean) | overwrite_global == TRUE) {
   end_dates <- as.Date(axn_shp$EndDate)
   day_diff <- difftime(end_dates, start_dates)
   if (any(day_diff  <= 0)) {
-    stop(add_ts("ERROR - EndDate must be after StartDate. Fix dates for the following bids:\n\t",
-                paste0(unique(axn_shp$BidID[day_diff <= 0]), collapse = "\n\t")))
+    
+    bad_date_df <- unique(as.data.frame(axn_shp[day_diff <= 0, c("BidID", "StartDate", "EndDate")]))
+    print(bad_date_df)
+    stop(add_ts("EndDate must be after StartDate. Fix dates for the following bids:\n\t",
+                paste0(bad_date_df$BidID, collapse = "\n\t")))
+
   }
   
   # Get months from shapefile
