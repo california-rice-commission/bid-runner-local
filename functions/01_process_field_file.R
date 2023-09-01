@@ -83,16 +83,25 @@ split_flooding_area <- function(field_shapefile, field_column_name, guide_raster
   # Initialize output
   processed_files <- c()
   
-  # Loop across flooding areas
+  # Check if all created and skip if not rasterizing
   flooding_areas <- unique(field_shp[[field_column_name]][, 1])
-  for (fa in flooding_areas) {
+  fa_files <- file.path(output_dir, paste0(clean_string_remove_underscores(flooding_areas), ".shp"))
+  if (all(file.exists(fa_files)) & overwrite != TRUE & do_rasterize != TRUE) {
     
+    if (verbose) message_ts("Shapefile already split, overwrite != TRUE, and not rasterizing. Returning.")
+    processed_files <- c(processed_files, fa_files)
+    return(processed_files)
+    
+  }
+  
+  # Loop across flooding areas
+  for (fan in 1:flooding_areas) {
+    
+    fa <- flooding_areas[n]
+    fa_file <- fa_files[n]
     message_ts("Working on flooding area ", fa)
-    fa_cln <- clean_string_remove_underscores(fa)
     
-    # Split shapefile
-    fa_file <- file.path(output_dir, paste0(fa_cln, ".shp"))
-    
+    # Check existence
     if (file.exists(fa_file) & overwrite == FALSE) {
       
       if (verbose) message_ts("Split shapefile for flooding area ", fa, " already created and overwrite == FALSE. ", 
@@ -187,7 +196,7 @@ rasterize_flooding_area <- function(field_shapefiles, guide_raster, output_dir,
     out_file <- file.path(output_dir, gsub(".shp", ".tif", fa))
     if (file.exists(out_file) & overwrite == FALSE) {
       
-      if (verbose) message_ts("File already rasterized and overwrite == FALSE. Moving to next...")
+      if (verbose) message_ts("File already rasterized and overwrite == FALSE. Moving to next")
       
       # Append to output
       processed_files <- c(processed_files, out_file)
@@ -217,7 +226,6 @@ rasterize_flooding_area <- function(field_shapefiles, guide_raster, output_dir,
       
       if (verbose) message_ts("Rasterizing...")
       fa_rst <- rasterize(fa_shp, guide_rst, field = 1) #keep in memory, as overwriting in subsequent call causes error
-      
       
       # Turn values within buffer distance of field to 2s instead of NAs
       # Used for masking later to speed processing
