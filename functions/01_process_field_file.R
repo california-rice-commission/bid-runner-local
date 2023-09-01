@@ -95,10 +95,10 @@ split_flooding_area <- function(field_shapefile, field_column_name, guide_raster
   }
   
   # Loop across flooding areas
-  for (fan in 1:flooding_areas) {
+  for (fan in 1:length(flooding_areas)) {
     
-    fa <- flooding_areas[n]
-    fa_file <- fa_files[n]
+    fa <- flooding_areas[fan]
+    fa_file <- fa_files[fan]
     message_ts("Working on flooding area ", fa)
     
     # Check existence
