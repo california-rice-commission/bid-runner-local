@@ -32,14 +32,14 @@ overlay_water_landcover <- function(water_files, landcover_files, output_dir = N
     out_files <- file.path(output_dir, paste0(substr(wfn, 0, nchar(wfn) - 4), "_x_", basename(landcover_files)))
     if (all(file.exists(out_files)) & overwrite != TRUE) {
 
-      if (verbose) message_ts("All water x landcover overlays created for this file. Moving to next...")
+      if (verbose) message_ts("All water x landcover overlays created for this file. Moving to next.")
       processed_files <- c(processed_files, out_files)
       next
 
     }
 
     # Load
-    wtr_rst <- raster(wf)
+    wtr_rst <- rast(wf)
 
     # Loop across passed landcover files
     for (lcf in landcover_files) {
@@ -48,20 +48,22 @@ overlay_water_landcover <- function(water_files, landcover_files, output_dir = N
       if (verbose) message_ts("Calculating overlay for ", lcfn, "...")
 
       # Load
-      lc_rst <- raster(lcf)
+      lc_rst <- rast(lcf)
 
       # Check file existence and whether or not to overwrite
       out_file <- file.path(output_dir, paste0(substr(wfn, 0, nchar(wfn) - 4), "_x_", lcfn))
       if (file.exists(out_file) & overwrite != TRUE) {
-        if (verbose) message_ts("File already processed and overwrite not set to TRUE. Moving to next...")
+        if (verbose) message_ts("File already processed and overwrite not set to TRUE. Moving to next.")
         processed_files <- c(processed_files, out_file)
         next
       }
 
       # Create overlay
-      if (verbose) message_ts("Overlaying water and landcover...")
+      #if (verbose) message_ts("Overlaying water and landcover...")
       if (verbose) message_ts("Output file: ", out_file)
-      wxl_rst <- overlay(x = wtr_rst, y = lc_rst, fun = function(x, y) { x * y }, filename = out_file, overwrite = overwrite)
+      wxl_rst <- lapp(c(wtr_rst, lc_rst), 
+                      fun = function(x, y) { x * y }, 
+                      filename = out_file, overwrite = overwrite)
       if (verbose) message_ts("Complete.")
 
       # Append to output
