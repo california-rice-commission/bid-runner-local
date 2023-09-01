@@ -41,8 +41,23 @@ tryCatch({ret <- lapply(code_files, source)},
          })
 
 # Packages ---------------------------------------------------------------------
-library(parallelly) #for checking number of cores
-library(terra) #for checking shapefile
+# Check if all are installed
+required_packages <- c("parallelly", "future", "foreach", "doFuture",
+                       "terra",
+                       "progressr", #logging
+                       "gbm", #predicting
+                       "dismo", "raster", "sp", #predicting; but obsolete in Oct 2023, need to figure out replacement?
+                       "dplyr", "tidyr") #data summarization (inlcuding tidyr for pivot)
+installed_packages <- as.character(installed.packages()[,1])
+missing_packages <- required_packages[!(required_packages %in% installed_packages)]
+if (length(missing_packages) > 0) {
+  stop(add_ts("The following packages are required but not installed:\n\t",
+              paste0(missing_packages, collapse = "\n\t")))
+}
+
+# Load those required for input testing / processing
+if (!require(parallelly)) stop(add_ts("Library parallelly is required"))     #for checking number of cores
+if (!require(terra)) stop(add_ts("Library terra is required"))               #for checking shapefile
 
 # Check passed parameters ------------------------------------------------------
 # Check shapefile existence (auction parameters checked at end of this script)
@@ -184,14 +199,18 @@ tmax_files <- file.path(cov_dir,
 tmax_names <- rep("tmax250m", length(tmax_mths))
 
 # Long-term water
+lt_wtr_files <- list.files(lt_wtr_dir, 
+                           pattern = paste0(axn_extent, ".*((", paste(month.abb, collapse = ")|("), ")).*tif$"), 
+                           full.names = TRUE)
 lt_fcl_files <- list.files(lt_fcl_dir, 
-                           pattern = paste0(scn, ".*((", paste(mths, collapse = ")|("), ")).*tif$"), 
+                           pattern = paste0(axn_extent, ".*((", paste(month.abb, collapse = ")|("), ")).*tif$"), 
                            full.names = TRUE)
 
 # Check repo for required data files
 data_files <- c(ref_file, lc_files, 
                 shorebird_model_files_reallong, shorebird_model_files_long,
-                bird_model_cov_files, tmax_files)
+                bird_model_cov_files, tmax_files,
+                lt_wtr_files, lt_fcl_files)
 data_files_exist <- file.exists(data_files)
 if (!all(data_files_exist)) {
   stop(add_ts("Required data files not found. If you cloned the repo from GitHub, please check ",
@@ -248,7 +267,7 @@ if (!file.exists(axn_file_clean) | overwrite_global == TRUE) {
   
   # Get months from shapefile
   mth_nums <- sort(as.numeric(unique(format(as.Date(c(start_dates, end_dates)), format = "%m"))))
-  mths <- month.abb[mth_nums]
+  axn_mths <- month.abb[mth_nums]
     
   # Check for multiple start/end dates in one bid
   bid_start_df <- unique(as.data.frame(axn_shp)[c("BidID", "StartDate")])
@@ -342,7 +361,25 @@ if (!file.exists(axn_file_clean) | overwrite_global == TRUE) {
   # Export
   writeVector(axn_shp_prj, filename = axn_file_clean, filetype = "ESRI Shapefile", overwrite = TRUE)
   
+  # Flood areas
+  flood_areas <- axn_shp$BidFieldID
+  
   # Clean up
   rm(ref_rst, axn_shp, axn_shp_prj)
   
-} 
+} else {
+  
+  axn_shp <- vect(axn_file_clean)
+  flood_areas <- axn_shp$BidFieldID
+  
+  # Get months from shapefile
+  mth_nums <- sort(as.numeric(unique(format(as.Date(c(axn_shp$StartDate, axn_shp$EndDate)), format = "%m"))))
+  axn_mths <- month.abb[mth_nums]
+  rm(axn_shp)
+  
+}
+
+# Final parameters -------------------------------------------------------------
+# Subset monthly covars to auction months
+lt_wtr_files <- lt_wtr_files[grepl(paste0(".*_((", paste0(axn_mths, collapse = ")|("), ")).tif$"), lt_wtr_files)]
+lt_fcl_files <- lt_fcl_files[grepl(paste0(".*_((", paste0(axn_mths, collapse = ")|("), "))_.*tif$"), lt_fcl_files)]
