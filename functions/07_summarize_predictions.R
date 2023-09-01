@@ -98,12 +98,12 @@ summarize_predictions <- function(stat_files, field_shapefile, output_dir, overw
   
   # Fix field name
   #joined_df <- rename(joined_df, FieldName = Field_Name, Property = Prop_Name, ReportedAcres = Report_Ac)
-  joined_df <- mutate(joined_df, FieldAreaAcres = FinalAcrea)
+  joined_df <- mutate(joined_df, FieldAreaAcres = AreaAcres)
   
   # Export
   long_file <- file.path(output_dir, "01_prediction_summary_joined.csv")
   if (file.exists(long_file) & overwrite != TRUE) {
-    message_ts("File already exists and overwrite != TRUE. Moving to next...")
+    message_ts("File already exists and overwrite != TRUE. Moving to next.")
   } else {
     write.csv(joined_df, long_file, row.names = FALSE)
     message_ts("Exported.")
