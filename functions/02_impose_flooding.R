@@ -47,7 +47,7 @@ impose_flooding <- function(water_files, field_files, output_dir,
       out_file <- file.path(output_dir, paste0(out_fn_base, "_", imposed_label, ".tif"))
       if (file.exists(out_file) & overwrite != TRUE) {
         
-        if (verbose) message_ts("Flooding already imposed. Moving to next...")
+        if (verbose) message_ts("Flooding already imposed. Moving to next.")
         processed_files <- c(processed_files, out_file)
         next
         
@@ -102,7 +102,7 @@ impose_flooding <- function(water_files, field_files, output_dir,
       }
       
       # Export
-      if (verbose) message_ts("Writing to: ", out_file)
+      if (verbose) message_ts("Output file: ", out_file)
       writeRaster(imp_rst, filename = out_file, overwrite = TRUE)
       if (verbose) message_ts("Complete.")
       
