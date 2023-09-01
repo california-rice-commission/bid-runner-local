@@ -32,13 +32,13 @@ mean_neighborhood_water <- function(water_files, distances, output_dir, trim_ext
   for (wf in water_files) {
 
     wfn <- basename(wf)
-    if (verbose) message_ts("Summing neighborhood water for water file ", wfn)
+    if (verbose) message_ts("Summing neighborhood water for ", wfn)
 
     # Check output files
     out_files <- file.path(output_dir, paste0(substr(wfn, 0, nchar(wfn) - 4), "_", distances, "m.tif"))
     if (all(file.exists(out_files)) & overwrite != TRUE) {
 
-      if (verbose) message_ts("All moving windows calculated for this file. Moving to next...")
+      if (verbose) message_ts("All moving windows calculated for this file. Moving to next.")
       processed_files <- c(processed_files, out_files)
       next
 
@@ -64,7 +64,7 @@ mean_neighborhood_water <- function(water_files, distances, output_dir, trim_ext
       out_file <- file.path(output_dir, paste0(substr(wfn, 0, nchar(wfn) - 4), "_", d, "m.tif"))
       if (file.exists(out_file) & overwrite != TRUE) {
 
-        if (verbose) message_ts("File already processed and overwrite not set to TRUE. Moving to next...")
+        if (verbose) message_ts("File already processed and overwrite not set to TRUE. Moving to next.")
         processed_files <- c(processed_files, out_file)
         next
 
@@ -75,7 +75,7 @@ mean_neighborhood_water <- function(water_files, distances, output_dir, trim_ext
       fwm <- round(2 * d / res(wtr_rst)[1])
 
       # Calculate moving window
-      if (verbose) message_ts("Calculating moving window...")
+      if (verbose) message_ts("Calculating moving window for distance ", d, "m...")
       if (verbose) message_ts("Output file: ", out_file)
       fcl_rst <- focal(wtr_rst, fwm, fun = mean, na.rm = TRUE, filename = out_file, overwrite = TRUE)
       if (verbose) message_ts("Complete.")
