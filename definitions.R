@@ -34,7 +34,7 @@ required_cols <- c(base_cols, extra_cols)
 
 # Spatial extent of the fields to process
 # Specifies the landsat scene the fields are part of, or 'valley' if multiple scenes
-# Leave as 'valley' by default or if unsure
+# Leave as 'valley' by default or if unsure; currently scene-specific files are not in GitHub
 # Allowed values: 'p44r33' (Sacramento), 'p44r34' (Suisun), 'p43r34' (Delta), 'p42r35' (Tulare)
 #                 'valley' (entire CVJV) if multiple
 # See map in documentation for details
@@ -43,7 +43,9 @@ axn_extent <- "valley"
 # Processing parameters --------------------------------------------------------
 # Maximum number of cores to use for processing
 # Must be an integer less than the number of cores on your machine
-cores_max_global <- 8
+# Processing is memory-intensive & your machine is likely to run out of memory before CPU
+#   Monitor and set max cores appropriately
+cores_max_global <- 4
 
 # Whether or not previously-created outputs in this auction should be overwritten
 # Must be TRUE or FALSE
