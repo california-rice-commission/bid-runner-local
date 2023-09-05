@@ -229,6 +229,10 @@ if (!file.exists(axn_file_clean) | overwrite_global == TRUE) {
   # Load
   axn_shp <- vect(axn_file)
   
+  # Add any ad-hoc edits to shapefile here
+  # TODO: figure out better place and/or way to do this
+  #axn_shp$StartDate[axn_shp$BidID == "23-FDF-404"] <- "2023/09/25"
+  
   # Check required columns
   # required_cols set in definitions.R
   missing_cols <- required_cols[!(required_cols %in% names(axn_shp))]
@@ -319,7 +323,23 @@ if (!file.exists(axn_file_clean) | overwrite_global == TRUE) {
                "To fix, either change EndDates to match within bids or create a ", 
                "new BidID for each EndDate (e.g., by appending a letter).")
   }
-
+  
+  # Check to see if any bids are splittable
+  nas_fld_split <- is.na(axn_shp$Split)
+  if (any(nas_fld_split)) {
+    message_ts("WARNING - the following bids have at least one row with an NA value in the ", 
+               "column 'Split' and each will be grouped (check if desired):\n\t",
+               paste0(unique(axn_shp$BidID[nas_fld_split]), collapse = "\n\t"))
+  }
+  
+  n_fld_split <- sum(ifelse(identical(axn_shp$Split, TRUE) | 
+                              identical(axn_shp$Split, 1) | 
+                              identical(axn_shp$Split, "Y") | 
+                              identical(axn_shp$Split, "Yes"), 1, 0))
+  if (n_fld_split == 0) {
+    message_ts("WARNING - no bids are coded as splitable, please check that this is correct.")
+  }
+  
   # Check for multiple split y/n parameters in one bid
   bid_split_df <- unique(as.data.frame(axn_shp)[c("BidID", "Split")])
   bids_multi_split <- unique(bid_split_df$BidID[duplicated(bid_split_df$BidID)])
@@ -344,9 +364,9 @@ if (!file.exists(axn_file_clean) | overwrite_global == TRUE) {
   }
   
   # Fill blanks
-  if (any(axn_shp$FieldID == "")) {
+  if (any(is.na(axn_shp$FieldID))) {
     message_ts("Filling blank field names with 'Field'")
-    axn_shp$FieldID <- ifelse(axn_shp$FieldID == "", "Field", axn_shp$FieldID)  
+    axn_shp$FieldID <- ifelse(is.na(axn_shp$FieldID) | axn_shp$FieldID == "", "Field", axn_shp$FieldID)  
   }
   
   # Check for duplicates
