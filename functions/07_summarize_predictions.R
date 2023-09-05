@@ -114,7 +114,7 @@ summarize_predictions <- function(stat_files, field_shapefile, output_dir, overw
   message_ts("Calculating ensembles...")
   group_cols <- c("FloodingArea", "BidID", "FieldID", "Split", "FieldAreaAcres", "PricePerAc", "PredictionMonth", 
                   "FloodDateStart", "FloodDateEnd", "DaysOverlap", "Species", "Model")
-  other_cols <- c("Region", "CoverType")
+  other_cols <- c("CoverType") #"Region"
   calc_cols <- c("ModelLocation", "PredictionMean", "PredictionSum", "PredictionMean_Landscape", "PredictionSum_Landscape")
   ens_df <- joined_df %>%
     #rename(Bid = BidID) %>%
@@ -131,54 +131,59 @@ summarize_predictions <- function(stat_files, field_shapefile, output_dir, overw
   
   ## SUMMARIZE BY FIELD ##
   fld_df <- filter(ens_df, Split == TRUE | Split == "Y" | Split == 1, DaysOverlap > 0)
-  
-  # Export (ensembles)
-  fld_file <- file.path(output_dir, "02_prediction_summary_field.csv")
-  if (file.exists(fld_file) & overwrite != TRUE) {
-    message_ts("File already exists and overwrite != TRUE. Moving to next...")
+  if (nrow(fld_df) == 0) {
+    message_ts("WARNING - No splittable fields found; all analysis performed at bid level. ",
+               "Check that this is correct!\n\n")
+    
   } else {
-    write.csv(fld_df, fld_file, row.names = FALSE)
-    message_ts("Exported.")
-    processed_files <- c(processed_files, fld_file)
+      
+    # Export (ensembles)
+    fld_file <- file.path(output_dir, "02_prediction_summary_field.csv")
+    if (file.exists(fld_file) & overwrite != TRUE) {
+      message_ts("File already exists and overwrite != TRUE. Moving to next...")
+    } else {
+      write.csv(fld_df, fld_file, row.names = FALSE)
+      message_ts("Exported.")
+      processed_files <- c(processed_files, fld_file)
+    }
+    
+    # Combine by month
+    fld_cmb_df <- fld_df %>%
+      group_by(across(all_of(c("FloodingArea", "BidID", "FieldID", "Split", "FieldAreaAcres", "PricePerAc", 
+                               "FloodDateStart", "FloodDateEnd", "Species", other_cols)))) %>%
+      summarize(PredictionYear = "Combined", PredictionMonth = "Combined", BidLength = sum(DaysOverlap),
+                SuitMean = weighted.mean(SuitabilityMean, DaysOverlap),
+                SuitSum = sum(SuitabilityMean * DaysOverlap * FieldAreaAcres), 
+                LandscapeMean = weighted.mean(LandscapeMean, DaysOverlap))
+    
+    # Export
+    fld_cmb_file <- file.path(output_dir, "02a_prediction_summary_field_across_months.csv")
+    if (file.exists(fld_cmb_file) & overwrite != TRUE) {
+      message_ts("File already exists and overwrite != TRUE. Moving to next...")
+    } else {
+      write.csv(fld_cmb_df, fld_cmb_file, row.names = FALSE)
+      message_ts("Exported.")
+      processed_files <- c(processed_files, fld_cmb_file)
+    }
+    
+    # Calculate totals across species
+    fld_wide_df <- fld_cmb_df %>%
+      select(-PredictionYear, - PredictionMonth, - LandscapeMean) %>%
+      pivot_wider(names_from = Species, values_from = c(SuitMean, SuitSum)) %>%
+      mutate(SuitMean_Total = mean(c(SuitMean_AMAV, SuitMean_BNST, SuitMean_DOWI, SuitMean_DUNL)),
+             SuitSum_Total = sum(c(SuitSum_AMAV, SuitSum_BNST, SuitSum_DOWI, SuitSum_DUNL)))
+    
+    # Export
+    fld_wide_file <- file.path(output_dir, "02b_prediction_summary_field_totals_wide.csv")
+    if (file.exists(fld_wide_file) & overwrite != TRUE) {
+      message_ts("File already exists and overwrite != TRUE. Moving to next...")
+    } else {
+      write.csv(fld_wide_df, fld_wide_file, row.names = FALSE)
+      message_ts("Exported.")
+      processed_files <- c(processed_files, fld_wide_file)
+    }
   }
-  
-  # Combine by month
-  fld_cmb_df <- fld_df %>%
-    group_by(across(all_of(c("FloodingArea", "BidID", "FieldID", "Split", "FieldAreaAcres", "PricePerAc", 
-                             "FloodDateStart", "FloodDateEnd", "Species", other_cols)))) %>%
-    summarize(PredictionYear = "Combined", PredictionMonth = "Combined", BidLength = sum(DaysOverlap),
-              SuitMean = weighted.mean(SuitabilityMean, DaysOverlap),
-              SuitSum = sum(SuitabilityMean * DaysOverlap * FieldAreaAcres), 
-              LandscapeMean = weighted.mean(LandscapeMean, DaysOverlap))
-  
-  # Export
-  fld_cmb_file <- file.path(output_dir, "02a_prediction_summary_field_across_months.csv")
-  if (file.exists(fld_cmb_file) & overwrite != TRUE) {
-    message_ts("File already exists and overwrite != TRUE. Moving to next...")
-  } else {
-    write.csv(fld_cmb_df, fld_cmb_file, row.names = FALSE)
-    message_ts("Exported.")
-    processed_files <- c(processed_files, fld_cmb_file)
-  }
-  
-  # Calculate totals across species
-  fld_wide_df <- fld_cmb_df %>%
-    select(-PredictionYear, - PredictionMonth, - LandscapeMean) %>%
-    pivot_wider(names_from = Species, values_from = c(SuitMean, SuitSum)) %>%
-    mutate(SuitMean_Total = mean(c(SuitMean_AMAV, SuitMean_BNST, SuitMean_DOWI, SuitMean_DUNL)),
-           SuitSum_Total = sum(c(SuitSum_AMAV, SuitSum_BNST, SuitSum_DOWI, SuitSum_DUNL)))
-  
-  # Export
-  fld_wide_file <- file.path(output_dir, "02b_prediction_summary_field_totals_wide.csv")
-  if (file.exists(fld_wide_file) & overwrite != TRUE) {
-    message_ts("File already exists and overwrite != TRUE. Moving to next...")
-  } else {
-    write.csv(fld_wide_df, fld_wide_file, row.names = FALSE)
-    message_ts("Exported.")
-    processed_files <- c(processed_files, fld_wide_file)
-  }
-  
-  
+    
   ## BY BID ##
   
   ## TODO: make it easier to add columns
