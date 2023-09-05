@@ -130,7 +130,7 @@ summarize_predictions <- function(stat_files, field_shapefile, output_dir, overw
     arrange(FloodingArea, BidID, FieldID, PredictionMonth)
   
   ## SUMMARIZE BY FIELD ##
-  fld_df <- filter(ens_df, Split == TRUE | Split == "Y" | Split == 1, DaysOverlap > 0)
+  fld_df <- filter(ens_df, Split == TRUE | Split == 1 | Split == "Y" | Split == "Yes", DaysOverlap > 0)
   if (nrow(fld_df) == 0) {
     message_ts("WARNING - No splittable fields found; all analysis performed at bid level. ",
                "Check that this is correct!\n\n")
