@@ -332,11 +332,14 @@ if (!file.exists(axn_file_clean) | overwrite_global == TRUE) {
                paste0(unique(axn_shp$BidID[nas_fld_split]), collapse = "\n\t"))
   }
   
-  n_fld_split <- sum(ifelse(identical(axn_shp$Split, TRUE) | 
-                              identical(axn_shp$Split, 1) | 
-                              identical(axn_shp$Split, "Y") | 
-                              identical(axn_shp$Split, "Yes"), 1, 0))
-  if (n_fld_split == 0) {
+  split_bool <- axn_shp$Split == TRUE | 
+                 axn_shp$Split == 1 |
+                 axn_shp$Split == "1" |
+                 axn_shp$Split == "Y" |
+                 axn_shp$Split == "Yes"
+  axn_shp$Split <- split_bool
+  
+  if (sum(split_bool) == 0) {
     message_ts("WARNING - no bids are coded as splitable, please check that this is correct.")
   }
   
@@ -408,6 +411,7 @@ if (!file.exists(axn_file_clean) | overwrite_global == TRUE) {
   
   # Export
   writeVector(axn_shp_prj, filename = axn_file_clean, filetype = "ESRI Shapefile", overwrite = TRUE)
+  message_ts("Cleaned shapefile exported.")
   
   # Flood areas
   flood_areas <- axn_shp$BidFieldID
@@ -418,6 +422,7 @@ if (!file.exists(axn_file_clean) | overwrite_global == TRUE) {
 } else {
   
   axn_shp <- vect(axn_file_clean)
+  message_ts("Shapefile already cleaned and overwrite != TRUE; cleaned shapefile loaded.")
   flood_areas <- axn_shp$BidFieldID
   
   # Get months from shapefile
