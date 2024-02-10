@@ -231,7 +231,11 @@ rasterize_flooding_area <- function(field_shapefiles, guide_raster, output_dir,
       # Used for masking later to speed processing
       # Width is in meters
       if (verbose) message_ts("Calculating ", buffer_dist, "m buffer for ", fa, "...")
-      fa_buf_rst <- buffer(fa_rst, width = buffer_dist)
+      #fa_buf_rst <- buffer(fa_rst, width = buffer_dist) #buffering raster stopped working Feb 2024; turned all pixels in grid to TRUE
+      fa_buf_shp <- buffer(fa_shp, width = buffer_dist)
+      
+      if (verbose) message_ts("Rasterizing buffer...")
+      fa_buf_rst <- rasterize(fa_buf_shp, guide_rst, field = 1)
       
       if (verbose) message_ts("Adding buffer to flooding area raster...")
       fa_out_rst <- lapp(c(fa_rst, fa_buf_rst), 
