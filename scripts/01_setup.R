@@ -233,6 +233,13 @@ if (!file.exists(axn_file_clean) | overwrite_global == TRUE) {
   # TODO: figure out better place and/or way to do this
   #axn_shp$StartDate[axn_shp$BidID == "23-FDF-404"] <- "2023/09/25"
   
+  # Check for invalid geometries
+  shp_invalid <- !is.valid(axn_shp)
+  if (any(shp_invalid)) {
+    message_ts("WARNING - Found ", sum(shp_invalid), " polygons with invalid geometries. Attempting to fix...")
+    axn_shp <- makeValid(axnShp)
+  }
+  
   # Check required columns
   # required_cols set in definitions.R
   missing_cols <- required_cols[!(required_cols %in% names(axn_shp))]
