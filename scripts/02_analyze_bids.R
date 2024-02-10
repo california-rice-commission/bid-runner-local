@@ -11,6 +11,7 @@ library(doFuture)
 library(progressr)
 
 # Split shapefile
+message_ts("Splitting shapefile into individual flooding areas")
 floodarea_files <- split_flooding_area(axn_file_clean,
                                        field_column_name = "BidFieldID",  #created in 01_setup.R
                                        guide_raster = ref_file,
@@ -246,9 +247,9 @@ handlers(handler_progress(
   format = "[:bar] :percent (:current/:total) - Elapsed: :elapsed, ETA: :eta", #:spin widget only spins when p() is called
   clear = FALSE))
 
-# Run sequentially (for testing purposes)
+# Run sequentially (for testing purposes or fixing errors)
 #plan(sequential)
-#evaluation <- evaluate_auction(flood_areas[1], verbose_level = 2, retry_times = 0, overwrite = FALSE)
+#evaluation <- evaluate_auction(flood_areas[FIELD_INDEX_TO_RUN], verbose_level = 2, retry_times = 1, overwrite = TRUE)
 
 # Set number of cores to use if running 
 # flood_areas pulled from axn_shp in 01_setup.R
@@ -257,9 +258,11 @@ n_sessions <- min(length(flood_areas), cores_to_use, cores_max_global, available
 
 # Run multisession evaluation
 plan(multisession, workers = n_sessions)
-evaluation <- evaluate_auction(flood_areas, verbose_level = 1, retry_times = 0, overwrite = overwrite_global)
+message_ts("Starting bid evaluation using ", n_sessions, " cores.")
+evaluation <- evaluate_auction(flood_areas, verbose_level = 1, retry_times = 1, overwrite = overwrite_global)
 
 # Summarize
+stat_files <- list.files(imp_stat_dir, pattern = ".rds$", full.names = TRUE)
 sum_files <- summarize_predictions(stat_files, 
                                    field_shapefile = axn_file_clean, 
                                    output_dir = imp_stat_dir, 
