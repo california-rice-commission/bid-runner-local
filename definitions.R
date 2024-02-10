@@ -16,7 +16,7 @@
 # Auction ----------------------------------------------------------------------
 # Name of auction and auction shapefile
 # Used as a folder name, so letters, numbers, underscores, and dashes only
-auction_id <- "2023-09-DeltaTest" #example format: year-mth-code
+auction_id <- "2024-02-B4B" #example format: year-mth-code
 
 # Path to auction files
 # By default, place in same directory as this repo (one level up from getwd())
@@ -25,7 +25,7 @@ axn_dir <- file.path(base_dir, auction_id)
 
 # Name and path of the field shapefile specifying the bids to analyze
 # Defaults to being stored in axn_dir; change as needed
-shp_fn <- "Birdreturns_Delta_Farmlands_Fall_2023.shp" #include extension
+shp_fn <- "B4B_spring_24_fields_all.shp" #include extension
 axn_file <- file.path(axn_dir, shp_fn)
 
 # Required columns in the shapefile
@@ -36,8 +36,8 @@ required_cols <- c(base_cols, extra_cols)
 
 # Bids to remove
 # Unique identifiers for bids to remove from consideration
-# Leave blank to include all (default)
-bids_to_remove <- paste0("23-FDF-", c(402, 405)) #e.g., paste0("23-FDF-", c(402, 405)) 
+# Leave blank to include all: bids_to_remove <- c()
+bids_to_remove <- c() #e.g., paste0("23-FDF-", c(402, 405)) 
 
 # Spatial extent of the fields to process
 # Specifies the landsat scene the fields are part of, or 'valley' if multiple scenes
