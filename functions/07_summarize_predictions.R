@@ -54,6 +54,20 @@ summarize_predictions <- function(stat_files, field_shapefile, output_dir, overw
   #fas <- unique(long_df$FloodingArea)
   #md_shp$BidFieldID[!(md_shp$BidFieldID %in% long_df$FloodingArea)]
   
+  # Join to metadata
+  # Must be unique -- If Flooding area is bid+field, use that alone
+  # Otherwise, use bid + field.  If field lost, use bid + acres
+  #join_col <- "BidID" #add as argument
+  #joined_df <- left_join(long_df, md_df, by = c("FloodingArea" = join_col))
+  #joined_df <- left_join(long_df, md_df, by = c("FloodingArea" = "BidID", "FieldAreaAcres" = "AreaAcres"))
+  joined_df <- left_join(long_df, md_df, by = c("FloodingArea" = "BidFieldID"))
+  
+  # Fix date if needed
+  # TODO - check format
+  joined_df <- joined_df %>%
+    mutate(StartDate = as.Date(StartDate, format = "%Y/%m/%d"),
+           EndDate = as.Date(EndDate, format = "%Y/%m/%d"))
+  
   # Data frame listing the number of days per month by leap year
   # 30 days: Apr Jun Sep Nov
   days_df <- data.frame("Month" = rep(month.abb, each = 2), 
@@ -70,20 +84,6 @@ summarize_predictions <- function(stat_files, field_shapefile, output_dir, overw
                                    31, 31, #Oct
                                    30, 30, #Nov
                                    31, 31)) #Dec
-  
-  # Join to metadata
-  # Must be unique -- If Flooding area is bid+field, use that alone
-  # Otherwise, use bid + field.  If field lost, use bid + acres
-  #join_col <- "BidID" #add as argument
-  #joined_df <- left_join(long_df, md_df, by = c("FloodingArea" = join_col))
-  #joined_df <- left_join(long_df, md_df, by = c("FloodingArea" = "BidID", "FieldAreaAcres" = "AreaAcres"))
-  joined_df <- left_join(long_df, md_df, by = c("FloodingArea" = "BidFieldID"))
-  
-  # Fix date if needed
-  # TODO - check format
-  joined_df <- joined_df %>%
-    mutate(StartDate = as.Date(StartDate, format = "%Y/%m/%d"),
-           EndDate = as.Date(EndDate, format = "%Y/%m/%d"))
   
   # Get start and end date for prediction
   # Sequence along all dates from the first start date to the last end date
