@@ -76,9 +76,10 @@ mean_neighborhood_water <- function(water_files, distances, output_dir, trim_ext
 
       # Calculate moving window
       if (verbose) message_ts("Calculating moving window for distance ", d, "m...")
-      if (verbose) message_ts("Output file: ", out_file)
-      fcl_rst <- focal(wtr_rst, fwm, fun = mean, na.rm = TRUE, filename = out_file, overwrite = TRUE)
-      if (verbose) message_ts("Complete.")
+      if (verbose) message_ts("Output file: ", basename(out_file))
+      fcl_rst <- focal(wtr_rst, fwm, fun = mean, na.rm = TRUE)
+      if (verbose) message_ts("Exporting...")
+      writeRaster(fcl_rst, filename = out_file, overwrite = TRUE)
 
       # Append to output
       processed_files <- c(processed_files, out_file)

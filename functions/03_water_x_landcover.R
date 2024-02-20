@@ -62,10 +62,10 @@ overlay_water_landcover <- function(water_files, landcover_files, output_dir = N
       #if (verbose) message_ts("Overlaying water and landcover...")
       if (verbose) message_ts("Output file: ", out_file)
       wxl_rst <- lapp(c(wtr_rst, lc_rst), 
-                      fun = function(x, y) { x * y }, 
-                      filename = out_file, overwrite = overwrite)
-      if (verbose) message_ts("Complete.")
-
+                      fun = function(x, y) { x * y })
+      if (verbose) message_ts("Exporting...")
+      writeRaster(wxl_rst, filename = out_file, overwrite = overwrite)
+      
       # Append to output
       processed_files <- c(processed_files, out_file)
 

@@ -303,10 +303,10 @@ predict_bird_rasters <- function(water_files_realtime, water_files_longterm, sce
 
           # Must define factors when predicting
           prd_rst <- predict(full_stk, mdl, n.trees = mdl$gbm.call$best.trees, 
-                                     type = "response", factors = list("COUNT_TYPE2" = c(1, 2)),
-                                     filename = prd_file, overwrite = TRUE)
+                                     type = "response", factors = list("COUNT_TYPE2" = c(1, 2)))
           summary(prd_rst, warn = FALSE)
-          if (verbose) message_ts("Complete.")
+          if (verbose) message_ts("Exporting...")
+          writeRaster(prd_rst, filename = prd_file, overwrite = TRUE)
 
           # Append to output
           processed_files <- c(processed_files, prd_file)

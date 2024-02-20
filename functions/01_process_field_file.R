@@ -220,7 +220,7 @@ rasterize_flooding_area <- function(field_shapefiles, guide_raster, output_dir,
     if (is.null(buffer_dist)) {
       
       if (verbose) message_ts("Rasterizing...")
-      fa_rst <- rasterize(fa_shp, guide_rst, field = 1, filename = fa_file, overwrite = TRUE)
+      fa_out_rst <- rasterize(fa_shp, guide_rst, field = 1)
       
     } else {
       
@@ -239,10 +239,12 @@ rasterize_flooding_area <- function(field_shapefiles, guide_raster, output_dir,
       
       if (verbose) message_ts("Adding buffer to flooding area raster...")
       fa_out_rst <- lapp(c(fa_rst, fa_buf_rst), 
-                         fun = function(x, y) { ifelse(is.na(x) & y == 1, 2, x) },
-                         filename = out_file, overwrite = TRUE)
+                         fun = function(x, y) { ifelse(is.na(x) & y == 1, 2, x) })
       
     }
+    
+    if (verbose) message_ts("Exporting...")
+    writeRaster(fa_out_rst, filename = out_file, overwrite = TRUE)
 
     # Append to output
     processed_files <- c(processed_files, out_file)
