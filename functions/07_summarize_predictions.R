@@ -49,10 +49,27 @@ summarize_predictions <- function(stat_files, field_shapefile, output_dir, overw
     
   }
   
-  # Missing
+  # Check missing
   #md_shp$BidFieldID[!(md_shp$BidFieldID %in% long_df$FloodingArea)]
   #fas <- unique(long_df$FloodingArea)
   #md_shp$BidFieldID[!(md_shp$BidFieldID %in% long_df$FloodingArea)]
+  
+  # Data frame listing the number of days per month by leap year
+  # 30 days: Apr Jun Sep Nov
+  days_df <- data.frame("Month" = rep(month.abb, each = 2), 
+                        "LeapYear" = rep(c(FALSE, TRUE), times = 12),
+                        "Days" = c(31, 31, #Jan
+                                   28, 29, #Feb
+                                   31, 31, #Mar
+                                   30, 30, #Apr
+                                   31, 31, #May
+                                   30, 30, #Jun
+                                   31, 31, #Jul
+                                   31, 31, #Aug
+                                   30, 30, #Sep
+                                   31, 31, #Oct
+                                   30, 30, #Nov
+                                   31, 31)) #Dec
   
   # Join to metadata
   # Must be unique -- If Flooding area is bid+field, use that alone
@@ -62,35 +79,37 @@ summarize_predictions <- function(stat_files, field_shapefile, output_dir, overw
   #joined_df <- left_join(long_df, md_df, by = c("FloodingArea" = "BidID", "FieldAreaAcres" = "AreaAcres"))
   joined_df <- left_join(long_df, md_df, by = c("FloodingArea" = "BidFieldID"))
   
-  # Fix bid ID
-  #joined_df <- mutate(joined_df, BidID = gsub("SDW", "-SDW-", BidID))
-  
-  #unique(md_shp$BidID[!(md_shp$BidID %in% joined_df$BidID)])
-  
-  
-  # Fix county
-  #cty_df <- read.csv(file.path(fld_dir, "delta_sod_wetland_counties.csv"))
-  #names(cty_df)[1] <- "BidID"
-  #cty_df <- cty_df[c("BidID", "County")]
-  #names(cty_df)[2] <- "County2"
-  #joined_df <- left_join(joined_df, cty_df, by = c("BidID" = "BidID"))
-  #joined_df$County <- ifelse(is.na(joined_df$County) | joined_df$County == "", joined_df$County2, joined_df$County)
-  
   # Fix date if needed
   # TODO - check format
   joined_df <- joined_df %>%
     mutate(StartDate = as.Date(StartDate, format = "%Y/%m/%d"),
            EndDate = as.Date(EndDate, format = "%Y/%m/%d"))
   
-  # Overlap
+  # Get start and end date for prediction
+  # Sequence along all dates from the first start date to the last end date
+  valid_dates <- seq(min(joined_df$StartDate), max(joined_df$EndDate), by = 1)
+  
+  # Get distinct year/month pairs and determine number of days in month
+  mth_yr_df <- data.frame(Year = format(valid_dates, format = "%Y"),
+                          Month = format(valid_dates, format = "%b")) %>%
+    distinct() %>%
+    # Leap year every four years, excepting three-quarters of centennial years
+    #   E.g., 2100, 2200, 2300 are leap years; 2000 and 2400 are not
+    #   So, a leap year if and only if year:
+    #     is divisible by 4 but not divisible by 100
+    #     OR is divisible by 400
+    mutate(YearNum = as.integer(Year),
+           LeapYear = (YearNum %% 4 == 0 & YearNum %% 100 != 0) | (YearNum %% 400 == 0)) %>%
+    left_join(days_df, by = join_by(Month == Month, LeapYear == LeapYear)) %>%
+    mutate(FirstDay = as.Date(paste(Year, match(Month, month.abb), 1, sep = "-")),
+           LastDay = as.Date(paste(Year, match(Month, month.abb), Days, sep = "-")))
+  
+  # Calculate overlap
   joined_df <- joined_df %>%
-    mutate(PredictionDateStart = as.Date(paste0(ifelse(PredictionMonth %in% c("Oct", "Nov", "Dec"), "2023", "2023"), 
-                                                "-", match(PredictionMonth, month.abb), "-01")), #need to fix year somehow
-           PredictionDateEnd = as.Date(paste0(ifelse(PredictionMonth %in% c("Oct", "Nov", "Dec"), "2023", "2023"),
-                                              "-", match(PredictionMonth, month.abb), "-", 
-                                              ifelse(PredictionMonth == "Feb", "28",
-                                                     ifelse(PredictionMonth %in% c("Apr", "Jun", "Sep", "Nov"), "30", "31")))),
-           FloodDateStart = as.Date(StartDate, format = "%Y/%m/%d"),
+    left_join(select(mth_yr_df, c(Month, FirstDay, LastDay)), by = join_by(PredictionMonth == Month)) %>%
+    rename(PredictionDateStart = FirstDay,
+           PredictionDateEnd = LastDay) %>%
+    mutate(FloodDateStart = as.Date(StartDate, format = "%Y/%m/%d"),
            FloodDateEnd = as.Date(EndDate, format = "%Y/%m/%d")) %>%
     mutate(OverlapMin = pmax(as.Date(FloodDateStart), PredictionDateStart), 
            OverlapMax = pmin(as.Date(FloodDateEnd), PredictionDateEnd),
@@ -130,7 +149,7 @@ summarize_predictions <- function(stat_files, field_shapefile, output_dir, overw
     arrange(FloodingArea, BidID, FieldID, PredictionMonth)
   
   ## SUMMARIZE BY FIELD ##
-  fld_df <- filter(ens_df, Split == TRUE | Split == 1 | Split == "Y" | Split == "Yes", DaysOverlap > 0)
+  fld_df <- filter(ens_df, (Split == TRUE | Split == 1 | Split == "Y" | Split == "Yes" ) & DaysOverlap > 0)
   if (nrow(fld_df) == 0) {
     message_ts("WARNING - No splittable fields found; all analysis performed at bid level. ",
                "Check that this is correct!\n\n")
