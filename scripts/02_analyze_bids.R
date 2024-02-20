@@ -66,6 +66,9 @@ evaluate_auction <- function(flood_areas, overwrite = FALSE,
   
   foreach(fa = flood_areas) %dofuture% {
     
+    # Set terra memory options
+    terraOptions(memfrac = 0.1, memmax = 8)#, steps = 55)
+    
     # Labels for messages
     fxn <- "setup"
     lbl <- paste0(fa, " ")
@@ -87,7 +90,7 @@ evaluate_auction <- function(flood_areas, overwrite = FALSE,
                                               guide_raster = ref_file,
                                               output_dir = spl_dir,         #defined in definitions.R
                                               buffer_dist = 10000,
-                                              overwrite = overwrite_global,
+                                              overwrite = overwrite,
                                               verbose = fxn_msg)
       
       if (prg_msg) p(add_ts("Rasterized files (", length(fa_rst_files), "): ", 
@@ -250,6 +253,7 @@ handlers(handler_progress(
 # Run sequentially (for testing purposes or fixing errors)
 #plan(sequential)
 #evaluation <- evaluate_auction(flood_areas[FIELD_INDEX_TO_RUN], verbose_level = 2, retry_times = 1, overwrite = TRUE)
+#evaluation <- evaluate_auction(flood_areas, verbose_level = 2, retry_times = 1, overwrite = TRUE)
 
 # Set number of cores to use if running 
 # flood_areas pulled from axn_shp in 01_setup.R
